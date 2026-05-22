@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prism Studio — Lantern Pavilion 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;600;900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Hanken Grotesk', sans-serif; background: #f6f3ee; color: #1c1917; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #e7e5e4; background: #fbfaf7; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg,#e23b3b,#f2c531 40%,#2f7fd6 75%,#7e3bb0); }
+  .brand h1 { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 900; line-height: 1; }
+  .brand .sub { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #a8a29e; margin-top: 3px; }
+  .btn { font-size: 12px; font-weight: 600; color: #fff; background: #1c1917; border: none; padding: 9px 14px; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #44403c; }
+  .ghost { background: none; color: #78716c; padding: 6px 10px; }
+  .ghost:hover { background: #f0eee9; color: #1c1917; }
+  .body { display: flex; flex: 1; overflow: hidden; }
+  @media (max-width: 880px){ .body { flex-direction: column; } }
+  #stage { position: relative; flex: 1; min-height: 380px; background: #cdd6dc; overflow: hidden; }
+  #stage canvas { display: block; }
+  .overlay { position: absolute; z-index: 5; pointer-events: none; }
+  .ov-tl { top: 16px; left: 20px; }
+  .ov-tl .lab { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #57534e; }
+  .ov-tl .big { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: #292524; }
+  .ov-tr { top: 16px; right: 20px; font-size: 11px; color: #57534e; background: rgba(255,255,255,.7); padding: 6px 11px; border-radius: 999px; }
+  .chip { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 5; background: #fbfaf7; border: 1px solid #e7e5e4; border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,.25); padding: 10px 18px; display: flex; align-items: center; gap: 16px; }
+  .chip .lab { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #a8a29e; }
+  .chip .price { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 900; }
+  .chip .div { width: 1px; height: 34px; background: #e7e5e4; }
+  .chip .meta { font-size: 11px; color: #78716c; line-height: 1.4; }
+  aside { width: 360px; background: #fbfaf7; border-left: 1px solid #e7e5e4; overflow-y: auto; padding: 20px; }
+  @media (max-width: 880px){ aside { width: 100%; border-left: none; border-top: 1px solid #e7e5e4; } }
+  .sec { margin-bottom: 22px; }
+  .sec h3 { font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #78716c; margin-bottom: 10px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .preset { font-size: 11px; font-weight: 500; color: #44403c; border: 1px solid #e7e5e4; background:#fff; border-radius: 10px; padding: 10px 6px; cursor: pointer; text-align: center; line-height: 1.2; }
+  .preset:hover { border-color: #d97706; background: #fffbeb; }
+  .opt { display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left; padding: 9px 12px; border-radius: 6px; border: 1px solid #e7e5e4; background: #fff; cursor: pointer; margin-bottom: 6px; font-size: 14px; color: #292524; }
+  .opt:hover { border-color: #d6d3d1; }
+  .opt.active { border-color: #d97706; background: #fffbeb; }
+  .opt .note { display:block; font-size: 11px; color: #a8a29e; margin-top: 1px; }
+  .opt .tick { color: #b45309; font-weight: 700; }
+  .sw { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid #e7e5e4; margin-right: 8px; vertical-align: middle; }
+  .sw span { width: 14px; height: 20px; display: block; }
+  .row { font-size: 14px; color: #44403c; margin-bottom: 4px; }
+  input[type=range]{ width: 100%; accent-color: #b45309; cursor: pointer; }
+  .val { text-align: right; font-size: 12px; color: #a8a29e; margin-top: 2px; }
+  .breakdown { background: #1c1917; color: #d6d3d1; border-radius: 12px; padding: 16px; }
+  .breakdown .h { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #78716c; margin-bottom: 12px; }
+  .breakdown .ln { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .breakdown .ln span:last-child { color: #f5f5f4; }
+  .breakdown .tot { display:flex; justify-content: space-between; align-items: baseline; padding-top: 12px; }
+  .breakdown .tot .l { font-family:'Fraunces',serif; font-weight: 600; color:#fff; }
+  .breakdown .tot .r { font-family:'Fraunces',serif; font-weight: 900; font-size: 18px; color:#fff; }
+  .saved { display: flex; flex-direction: column; gap: 6px; }
+  .scard { border: 1px solid #e7e5e4; border-radius: 10px; padding: 10px 12px; background: #fff; cursor: pointer; position: relative; transition: border-color .15s; }
+  .scard:hover { border-color: #d97706; }
+  .scard.cur { border-color: #d97706; background: #fffbeb; }
+  .scard .nm { font-weight: 600; font-size: 13px; color: #292524; }
+  .scard .sz { font-size: 11px; color: #a8a29e; margin-top: 2px; }
+  .scard .pr { font-family: 'Fraunces', serif; font-weight: 900; font-size: 14px; margin-top: 5px; color: #1c1917; }
+  .scard .swrow { display: inline-flex; border-radius: 3px; overflow: hidden; margin-top: 6px; border: 1px solid #e7e5e4; }
+  .scard .swrow span { width: 12px; height: 14px; display: block; }
+  .scard .rm { position: absolute; top: 8px; right: 10px; border: none; background: none; color: #d6d3d1; cursor: pointer; font-size: 15px; line-height: 1; }
+  .scard .rm:hover { color: #dc2626; }
+  .empty { font-size: 12px; color: #a8a29e; border: 1px dashed #d6d3d1; border-radius: 10px; padding: 14px; text-align: center; }
+  .savebtn { width: 100%; margin-top: 8px; font-size: 12px; font-weight: 600; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 9px; border-radius: 8px; cursor: pointer; }
+  .savebtn:hover { background: #fef3c7; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .modal { background: #fbfaf7; border-radius: 16px; width: 100%; max-width: 420px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.4); }
+  .modal .top { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e7e5e4; font-family:'Fraunces',serif; font-weight: 700; }
+  .modal pre { margin: 16px; padding: 16px; background: #fff; border: 1px solid #e7e5e4; border-radius: 10px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; font-family: ui-monospace, monospace; color: #44403c; }
+  .modal .acts { padding: 0 20px 20px; display: flex; gap: 8px; }
+  .x { cursor: pointer; color: #a8a29e; font-size: 20px; border: none; background: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo"></div>
+      <div><h1>Prism Studio</h1><div class="sub">Lantern Pavilion · 3D</div></div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn ghost" id="reset">↺ Reset</button>
+      <button class="btn ghost" id="save">＋ Save design</button>
+      <button class="btn" id="export">⤓ Export spec</button>
+    </div>
+  </header>
+  <div class="body">
+    <div id="stage">
+      <div class="overlay ov-tl"><div class="lab">3D preview</div><div class="big" id="ovtitle"></div></div>
+      <div class="overlay ov-tr">drag to orbit · scroll to zoom</div>
+      <div class="chip">
+        <div><div class="lab">Indicative estimate</div><div class="price" id="chipPrice"></div></div>
+        <div class="div"></div>
+        <div class="meta" id="chipMeta"></div>
+      </div>
+    </div>
+    <aside id="rail"></aside>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="top"><span>Specification sheet</span><button class="x" id="closeModal">×</button></div>
+    <pre id="specText"></pre>
+    <div class="acts">
+      <button class="btn" id="copyBtn" style="flex:1;">Copy to clipboard</button>
+      <button class="btn ghost" id="closeModal2">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const PALETTES = {
+  spectrum:{name:"Full Spectrum",swatch:["#e23b3b","#f08a24","#f2c531","#3fae5a","#2f7fd6","#3b3bb0","#7e3bb0"]},
+  jewel:{name:"Cathedral Jewel",swatch:["#a8243b","#c87633","#d9b13a","#258a59","#235fa0","#6a3490","#a02568"]},
+  sunset:{name:"Vesper Sunset",swatch:["#8a1640","#c0392b","#e8743b","#f0b429","#e85d9a","#b03a7d"]},
+  ocean:{name:"Tidewater",swatch:["#0f5c6b","#0f7d8c","#1a9bb0","#2bc4d6","#1c4f8a","#103a6b"]},
+  forest:{name:"Verdant",swatch:["#236235","#2f7a3d","#5ca84a","#a8c43a","#caa12f","#14401f"]},
+  cobalt:{name:"Monochrome Cobalt",swatch:["#143f8a","#1c4fa0","#2456b0","#3a72cf","#5a93e0","#284f9a"]},
+};
+const PATTERNS = {
+  cascade:{name:"Cascade",note:"Bands flow down the slope"},
+  diagonal:{name:"Diagonal Drift",note:"Hues shift on the diagonal"},
+  mosaic:{name:"Scatter Mosaic",note:"Randomized, no two alike"},
+  bands:{name:"Vertical Bands",note:"Stripes across the length"},
+  gradient:{name:"Gradient Wash",note:"Smooth left-to-right blend"},
+};
+const GLASS = {
+  cathedral:{name:"Cathedral, textured",per:380,note:"Rolled, lightly textured."},
+  antique:{name:"Antique mouth-blown",per:740,note:"Hand-blown. Richest light."},
+  recycled:{name:"Recycled fused",per:235,note:"Reclaimed, fused tiles."},
+};
+const FRAMES = {
+  timber:{name:"Reclaimed Douglas fir",per:92,tone:"#6f4322"},
+  oak:{name:"White oak, oiled",per:158,tone:"#9a7038"},
+  steel:{name:"Blackened steel",per:134,tone:"#2c2c30"},
+};
+const FLOORS = {
+  concrete:{name:"Polished concrete",per:28,tone:"#b9ad9c"},
+  terrazzo:{name:"Terrazzo, custom",per:96,tone:"#cabfae"},
+  deck:{name:"Ipe wood deck",per:44,tone:"#9a6a3c"},
+};
+const PITCH = { low:{name:"Low (4:12)",slope:0.34}, med:{name:"Medium (8:12)",slope:0.67}, steep:{name:"Steep (12:12)",slope:1.0} };
+const ROWS = { low:4, med:6, steep:8 };
+const PRESETS = {
+  chapel:{name:"The Chapel",length:30,width:22,pitch:"steep",pattern:"cascade",palette:"jewel",glass:"antique",frame:"oak",floor:"terrazzo",light:85},
+  meadow:{name:"The Meadow Hall",length:54,width:34,pitch:"med",pattern:"diagonal",palette:"spectrum",glass:"cathedral",frame:"timber",floor:"concrete",light:70},
+  lantern:{name:"The Lantern",length:24,width:20,pitch:"steep",pattern:"mosaic",palette:"sunset",glass:"recycled",frame:"steel",floor:"deck",light:95},
+};
+const seed = n => { const x = Math.sin(n*999.13)*10000; return x - Math.floor(x); };
+const colsFor = len => Math.max(8, Math.min(18, Math.round(len/3)));
+function cellIdx(r,c,cols,pat,L){ switch(pat){case"cascade":return r;case"diagonal":return r+c;case"bands":return c;case"gradient":return Math.floor((c/Math.max(1,cols-1))*(L-1));default:return Math.floor(seed(r*31+c*17)*L);} }
+const fmt = n => "$"+Math.round(n).toLocaleString();
+
+let cfg = Object.assign({}, PRESETS.meadow);
+
+/* ---------- THREE setup ---------- */
+const stage = document.getElementById('stage');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#cdd6dc');
+scene.fog = new THREE.Fog('#cdd6dc', 90, 240);
+const camera = new THREE.PerspectiveCamera(42, stage.clientWidth/stage.clientHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(stage.clientWidth, stage.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight('#eef3f7','#4a5a3a',0.85));
+const sun = new THREE.DirectionalLight('#fff4e0',1.2);
+sun.position.set(-40,70,40); sun.castShadow = true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-60; sun.shadow.camera.right=60; sun.shadow.camera.top=60; sun.shadow.camera.bottom=-60;
+scene.add(sun);
+scene.add(new THREE.AmbientLight('#ffffff',0.25));
+const grass = new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshStandardMaterial({color:'#6f8d54',roughness:1}));
+grass.rotation.x = -Math.PI/2; grass.position.y = -0.3; grass.receiveShadow = true; scene.add(grass);
+
+const orbit = { theta:0.85, phi:0.95, radius:70, target:new THREE.Vector3(0,5,0), dragging:false, px:0, py:0, auto:true };
+const dom = renderer.domElement;
+dom.style.cursor = 'grab'; dom.style.touchAction = 'none';
+dom.addEventListener('pointerdown', e=>{ orbit.dragging=true; orbit.auto=false; orbit.px=e.clientX; orbit.py=e.clientY; dom.style.cursor='grabbing'; });
+window.addEventListener('pointermove', e=>{ if(!orbit.dragging)return; orbit.theta-=(e.clientX-orbit.px)*0.006; orbit.phi-=(e.clientY-orbit.py)*0.006; orbit.phi=Math.max(0.15,Math.min(1.45,orbit.phi)); orbit.px=e.clientX; orbit.py=e.clientY; });
+window.addEventListener('pointerup', ()=>{ orbit.dragging=false; dom.style.cursor='grab'; });
+dom.addEventListener('wheel', e=>{ e.preventDefault(); orbit.auto=false; orbit.radius=Math.max(28,Math.min(160,orbit.radius*(1+e.deltaY*0.0012))); }, {passive:false});
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(orbit.auto) orbit.theta += 0.0022;
+  const {theta,phi,radius,target}=orbit;
+  camera.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta), target.y+radius*Math.cos(phi), target.z+radius*Math.sin(phi)*Math.cos(theta));
+  camera.lookAt(target);
+  renderer.render(scene,camera);
+}
+animate();
+new ResizeObserver(()=>{ const w=stage.clientWidth,h=stage.clientHeight; if(w&&h){ camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h);} }).observe(stage);
+
+let pavilion = null;
+function rebuild(){
+  if(pavilion){ pavilion.traverse(o=>{ if(o.geometry)o.geometry.dispose(); if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose()); }); scene.remove(pavilion); }
+  const g = new THREE.Group();
+  const L=cfg.length, Wd=cfg.width, hL=L/2, hW=Wd/2, postH=9;
+  const rise=hW*PITCH[cfg.pitch].slope, ridgeY=postH+rise;
+  const slopeLen=Math.sqrt(hW*hW+rise*rise), slopeAngle=Math.atan2(rise,hW);
+  const cols=colsFor(L), rows=ROWS[cfg.pitch], pal=PALETTES[cfg.palette].swatch;
+  const beamMat=new THREE.MeshStandardMaterial({color:new THREE.Color(FRAMES[cfg.frame].tone),roughness:0.8,metalness:cfg.frame==='steel'?0.5:0.05});
+  const beam=(a,b,w)=>{ const dir=new THREE.Vector3().subVectors(b,a); const len=dir.length(); const m=new THREE.Mesh(new THREE.BoxGeometry(len,w,w),beamMat); m.position.copy(a).addScaledVector(dir,0.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),dir.clone().normalize()); m.castShadow=true; g.add(m); };
+
+  const plat=new THREE.Mesh(new THREE.BoxGeometry(L+5,0.6,Wd+5),new THREE.MeshStandardMaterial({color:FLOORS[cfg.floor].tone,roughness:cfg.floor==='concrete'?0.5:0.35}));
+  plat.receiveShadow=true; g.add(plat);
+
+  const midN=Math.max(0,Math.round(L/14)); const postXs=[-hL,hL];
+  for(let i=1;i<=midN;i++) postXs.push(-hL+L*i/(midN+1));
+  postXs.forEach(x=>[-hW,hW].forEach(z=>beam(new THREE.Vector3(x,0,z),new THREE.Vector3(x,postH,z),0.7)));
+  beam(new THREE.Vector3(-hL,ridgeY,0),new THREE.Vector3(hL,ridgeY,0),0.6);
+  beam(new THREE.Vector3(-hL,postH,hW),new THREE.Vector3(hL,postH,hW),0.5);
+  beam(new THREE.Vector3(-hL,postH,-hW),new THREE.Vector3(hL,postH,-hW),0.5);
+  [-hL,hL].forEach(x=>{ beam(new THREE.Vector3(x,postH,hW),new THREE.Vector3(x,ridgeY,0),0.45); beam(new THREE.Vector3(x,postH,-hW),new THREE.Vector3(x,ridgeY,0),0.45); });
+
+  const buildSlope=side=>{
+    const grp=new THREE.Group();
+    const back=new THREE.Mesh(new THREE.PlaneGeometry(L,slopeLen),new THREE.MeshStandardMaterial({color:'#15110d',roughness:0.9,side:THREE.DoubleSide}));
+    back.position.set(0,slopeLen/2,-0.07); grp.add(back);
+    const pw=L/cols, ph=slopeLen/rows;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const hex=pal[((cellIdx(r,c,cols,cfg.pattern,pal.length)%pal.length)+pal.length)%pal.length];
+      const col=new THREE.Color(hex);
+      const mat=new THREE.MeshStandardMaterial({color:col,emissive:col.clone().multiplyScalar(0.55),roughness:0.25,transparent:true,opacity:0.78+seed(r*7+c*3)*0.2,side:THREE.DoubleSide});
+      const p=new THREE.Mesh(new THREE.BoxGeometry(pw*0.9,ph*0.9,0.18),mat);
+      p.position.set(-hL+(c+0.5)*pw,(r+0.5)*ph,0.04); grp.add(p);
+    }
+    if(side>0){ grp.position.set(0,postH,hW); grp.rotation.x=slopeAngle-Math.PI/2; }
+    else { grp.position.set(0,postH,-hW); grp.rotation.x=Math.PI/2-slopeAngle; }
+    g.add(grp);
+  };
+  buildSlope(1); buildSlope(-1);
+
+  for(let i=0;i<30;i++){
+    const hex=pal[Math.floor(seed(i*13)*pal.length)];
+    const m=new THREE.Mesh(new THREE.CircleGeometry(0.7+seed(i*3)*1.6,16),new THREE.MeshBasicMaterial({color:new THREE.Color(hex),transparent:true,opacity:(cfg.light/100)*(0.12+seed(i*2)*0.28),blending:THREE.AdditiveBlending,depthWrite:false}));
+    m.rotation.x=-Math.PI/2; m.position.set(-hL+seed(i*5+1)*L,0.35,-hW+seed(i*9+3)*Wd); g.add(m);
+  }
+  scene.add(g); pavilion=g;
+  orbit.target.set(0,postH*0.55,0);
+  sun.intensity=0.6+(cfg.light/100)*0.9;
+}
+
+/* ---------- pricing ---------- */
+function priceOf(){
+  const cols=colsFor(cfg.length), rows=ROWS[cfg.pitch], panels=cols*rows*2, sqft=cfg.length*cfg.width;
+  const glass=panels*GLASS[cfg.glass].per, structure=sqft*FRAMES[cfg.frame].per, floor=sqft*FLOORS[cfg.floor].per;
+  const install=(glass+structure)*0.22, total=glass+structure+floor+install;
+  return {panels,sqft,glass,structure,floor,install,lo:total*0.92,hi:total*1.14};
+}
+
+/* ---------- saved designs / compare ---------- */
+let savedDesigns = [];
+let optLetter = 65;
+const sameCfg = (a,b) => JSON.stringify(a)===JSON.stringify(b);
+function saveDesign(){
+  const p=priceOf();
+  savedDesigns.push({ name:'Option '+String.fromCharCode(optLetter++), cfg:Object.assign({},cfg), size:cfg.length+'×'+cfg.width+' ft', panels:p.panels, lo:p.lo, hi:p.hi, pal:PALETTES[cfg.palette].swatch.slice(0,6) });
+  renderRail();
+}
+function renderSaved(){
+  const wrap=document.createElement('div'); wrap.className='saved';
+  if(savedDesigns.length===0){
+    const e=document.createElement('div'); e.className='empty'; e.textContent='Save a design to compare size and price side by side as you iterate.'; wrap.appendChild(e);
+  } else {
+    savedDesigns.forEach((d,i)=>{
+      const c=document.createElement('div'); c.className='scard'+(sameCfg(d.cfg,cfg)?' cur':'');
+      c.innerHTML='<button class="rm" title="Remove">×</button>'+
+        '<div class="nm">'+d.name+'</div>'+
+        '<div class="sz">'+d.size+' · '+d.panels+' panels</div>'+
+        '<div class="pr">'+fmt(d.lo)+'–'+fmt(d.hi)+'</div>'+
+        '<span class="swrow">'+d.pal.map(s=>'<span style="background:'+s+'"></span>').join('')+'</span>';
+      c.onclick=()=>{ cfg=Object.assign({},d.cfg); update(); renderRail(); };
+      c.querySelector('.rm').onclick=(ev)=>{ ev.stopPropagation(); savedDesigns.splice(i,1); renderRail(); };
+      wrap.appendChild(c);
+    });
+  }
+  const sb=document.createElement('button'); sb.className='savebtn'; sb.textContent='＋ Save current design';
+  sb.onclick=saveDesign; wrap.appendChild(sb);
+  return wrap;
+}
+
+/* ---------- controls ---------- */
+const rail = document.getElementById('rail');
+function btnGroup(key, opts, withSwatch, withNote){
+  const wrap = document.createElement('div');
+  Object.entries(opts).forEach(([k,v])=>{
+    const b=document.createElement('button'); b.className='opt'+(cfg[key]===k?' active':'');
+    let inner='';
+    if(withSwatch){ inner+='<span><span class="sw">'+v.swatch.slice(0,6).map(s=>'<span style="background:'+s+'"></span>').join('')+'</span>'+v.name+'</span>'; }
+    else if(withNote){ inner+='<span>'+v.name+'<span class="note">'+(v.note||'')+(v.per?(' · '+fmt(v.per)+(opts===GLASS?'/panel':'/sf')):'')+'</span></span>'; }
+    else { inner+='<span>'+v.name+(v.per?(' <span class="note" style="display:inline">· '+fmt(v.per)+'/sf</span>'):'')+'</span>'; }
+    inner+='<span class="tick">'+(cfg[key]===k?'✓':'')+'</span>';
+    b.innerHTML=inner;
+    b.onclick=()=>{ cfg[key]=k; update(); };
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+function slider(key,min,max,suffix){
+  const wrap=document.createElement('div');
+  const inp=document.createElement('input'); inp.type='range'; inp.min=min; inp.max=max; inp.value=cfg[key];
+  const val=document.createElement('div'); val.className='val'; val.textContent=cfg[key]+suffix;
+  inp.oninput=()=>{ cfg[key]=+inp.value; val.textContent=cfg[key]+suffix; update(false); };
+  wrap.appendChild(inp); wrap.appendChild(val); return wrap;
+}
+function section(title, node){
+  const s=document.createElement('div'); s.className='sec';
+  const h=document.createElement('h3'); h.textContent=title; s.appendChild(h); s.appendChild(node); return s;
+}
+function renderRail(){
+  rail.innerHTML='';
+  // presets
+  const ps=document.createElement('div'); ps.className='grid3';
+  Object.entries(PRESETS).forEach(([k,p])=>{ const b=document.createElement('button'); b.className='preset'; b.textContent=p.name; b.onclick=()=>{ cfg=Object.assign({},p); update(); renderRail(); }; ps.appendChild(b); });
+  rail.appendChild(section('Start from a design', ps));
+  rail.appendChild(section('Saved designs · compare', renderSaved()));
+  // footprint
+  const fp=document.createElement('div');
+  const lr=document.createElement('div'); lr.className='row'; lr.textContent='Length'; fp.appendChild(lr); fp.appendChild(slider('length',24,60,' ft'));
+  const wr=document.createElement('div'); wr.className='row'; wr.textContent='Width'; wr.style.marginTop='10px'; fp.appendChild(wr); fp.appendChild(slider('width',18,40,' ft'));
+  rail.appendChild(section('Footprint', fp));
+  rail.appendChild(section('Roof pitch', btnGroup('pitch',PITCH,false,false)));
+  rail.appendChild(section('Glass pattern', btnGroup('pattern',PATTERNS,false,true)));
+  rail.appendChild(section('Color palette', btnGroup('palette',PALETTES,true,false)));
+  rail.appendChild(section('Glazing', btnGroup('glass',GLASS,false,true)));
+  rail.appendChild(section('Frame material', btnGroup('frame',FRAMES,false,false)));
+  rail.appendChild(section('Floor', btnGroup('floor',FLOORS,false,false)));
+  rail.appendChild(section('Sun intensity', slider('light',20,100,'%')));
+  // breakdown
+  const bd=document.createElement('div'); bd.className='breakdown'; bd.id='breakdown';
+  rail.appendChild(bd);
+  renderBreakdown();
+}
+function renderBreakdown(){
+  const p=priceOf(); const bd=document.getElementById('breakdown'); if(!bd)return;
+  bd.innerHTML='<div class="h">Cost breakdown</div>'+
+    [['Glazing',p.glass],['Structure',p.structure],['Floor',p.floor],['Install (22%)',p.install]].map(([l,v])=>'<div class="ln"><span>'+l+'</span><span>'+fmt(v)+'</span></div>').join('')+
+    '<div class="tot"><span class="l">Estimate</span><span class="r">'+fmt(p.lo)+'–'+fmt(p.hi)+'</span></div>';
+}
+function updateChips(){
+  const p=priceOf();
+  document.getElementById('ovtitle').textContent=cfg.length+' × '+cfg.width+' ft · '+p.panels+' panels';
+  document.getElementById('chipPrice').textContent=fmt(p.lo)+' – '+fmt(p.hi);
+  document.getElementById('chipMeta').innerHTML=PALETTES[cfg.palette].name+'<br>'+GLASS[cfg.glass].name;
+}
+function update(full=true){
+  rebuild(); updateChips(); renderBreakdown();
+  if(full) renderRail();
+}
+
+/* ---------- export ---------- */
+function specText(){
+  const p=priceOf();
+  return ["PRISM STUDIO — PAVILION SPECIFICATION","------------------------------------",
+  "Footprint:    "+cfg.length+" x "+cfg.width+" ft  ("+p.sqft.toLocaleString()+" sq ft)",
+  "Roof pitch:   "+PITCH[cfg.pitch].name,"Glass panels: "+p.panels,
+  "Pattern:      "+PATTERNS[cfg.pattern].name,"Palette:      "+PALETTES[cfg.palette].name,
+  "Glazing:      "+GLASS[cfg.glass].name,"Frame:        "+FRAMES[cfg.frame].name,
+  "Floor:        "+FLOORS[cfg.floor].name,"------------------------------------",
+  "Glazing:      "+fmt(p.glass),"Structure:    "+fmt(p.structure),"Floor:        "+fmt(p.floor),
+  "Install:      "+fmt(p.install),"ESTIMATE:     "+fmt(p.lo)+" - "+fmt(p.hi)].join("\n");
+}
+document.getElementById('export').onclick=()=>{ document.getElementById('specText').textContent=specText(); document.getElementById('modalBg').style.display='flex'; };
+document.getElementById('closeModal').onclick=document.getElementById('closeModal2').onclick=()=>document.getElementById('modalBg').style.display='none';
+document.getElementById('modalBg').onclick=e=>{ if(e.target.id==='modalBg') e.currentTarget.style.display='none'; };
+document.getElementById('copyBtn').onclick=()=>{ navigator.clipboard.writeText(specText()).then(()=>{ const b=document.getElementById('copyBtn'); b.textContent='Copied ✓'; setTimeout(()=>b.textContent='Copy to clipboard',1600); }).catch(()=>{}); };
+document.getElementById('reset').onclick=()=>{ cfg=Object.assign({},PRESETS.meadow); update(); renderRail(); };
+document.getElementById('save').onclick=saveDesign;
+
+/* ---------- go ---------- */
+rebuild(); renderRail(); updateChips();
+</script>
+</body>
+</html>
